@@ -1,16 +1,209 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Keep the product palette consistent across views that use utility classes. */
+:root {
+  --ink: #000000;
+  --panel: #080b09;
+  --panel-raised: #111612;
+  --line: #202a23;
+  --muted: #87948a;
+  --green: #35c779;
+  --green-bright: #6ee7a3;
+}
+
 @layer base {
   body {
-    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    letter-spacing: -0.015em;
-    background-color: #020617;
+    font-family:
+      "Poppins",
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      sans-serif;
+    letter-spacing: 0;
+    background-color: var(--ink);
     color: #f8fafc;
   }
 
-  code, pre, .font-mono {
-    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  ::selection {
+    background-color: var(--green);
+    color: #001108;
   }
+
+  code,
+  pre,
+  .font-mono {
+    font-family:
+      "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+      monospace;
+  }
+}
+
+/* Theme overrides keep the existing component structure while removing the blue bias. */
+.bg-slate-950,
+.bg-slate-950\/80,
+.bg-slate-950\/60,
+.bg-slate-950\/70,
+.bg-slate-950\/90 {
+  background-color: var(--ink) !important;
+}
+.bg-slate-900,
+.bg-slate-900\/90,
+.bg-slate-900\/80 {
+  background-color: var(--panel) !important;
+}
+.bg-slate-800,
+.bg-slate-800\/60,
+.bg-slate-800\/40 {
+  background-color: var(--panel-raised) !important;
+}
+.border-slate-800,
+.border-slate-800\/80,
+.border-slate-800\/90,
+.border-slate-700,
+.border-slate-700\/80 {
+  border-color: var(--line) !important;
+}
+
+.bg-indigo-600,
+.bg-indigo-500,
+.bg-indigo-500\/10,
+.bg-indigo-500\/15,
+.bg-indigo-500\/20,
+.bg-indigo-500\/30 {
+  background-color: color-mix(
+    in srgb,
+    var(--green) 18%,
+    transparent
+  ) !important;
+}
+.bg-indigo-600 {
+  background-color: var(--green) !important;
+}
+.hover\:bg-indigo-500:hover {
+  background-color: #49d88a !important;
+}
+.text-indigo-600,
+.text-indigo-500,
+.text-indigo-400,
+.text-indigo-300,
+.text-indigo-200 {
+  color: var(--green-bright) !important;
+}
+.border-indigo-500,
+.border-indigo-500\/30,
+.border-indigo-500\/40,
+.border-indigo-400\/30,
+.border-indigo-800\/60 {
+  border-color: color-mix(in srgb, var(--green) 45%, transparent) !important;
+}
+.from-indigo-600,
+.from-indigo-900,
+.via-indigo-500,
+.via-indigo-950,
+.to-indigo-950 {
+  --tw-gradient-from: var(--green) !important;
+  --tw-gradient-to: transparent !important;
+}
+.accent-indigo-600 {
+  accent-color: var(--green) !important;
+}
+.shadow-indigo-500\/25 {
+  --tw-shadow-color: color-mix(
+    in srgb,
+    var(--green) 25%,
+    transparent
+  ) !important;
+}
+
+/* Bring legacy light panels into the same dark visual system. */
+.bg-white,
+.bg-white\/90,
+.bg-white\/80,
+.bg-white\/50 {
+  background-color: var(--panel) !important;
+}
+.bg-slate-50,
+.bg-slate-50\/80,
+.bg-slate-100,
+.bg-zinc-50,
+.bg-zinc-50\/80,
+.bg-zinc-100 {
+  background-color: var(--panel-raised) !important;
+}
+.bg-slate-200,
+.bg-zinc-200,
+.hover\:bg-slate-100:hover,
+.hover\:bg-slate-200:hover,
+.hover\:bg-zinc-100:hover,
+.hover\:bg-zinc-200:hover {
+  background-color: #1d2a21 !important;
+}
+.text-slate-900,
+.text-slate-800,
+.text-slate-700,
+.text-zinc-900,
+.text-zinc-800,
+.text-zinc-700,
+.text-zinc-600 {
+  color: #e2eee6 !important;
+}
+.text-slate-600,
+.text-zinc-500,
+.text-zinc-400 {
+  color: var(--muted) !important;
+}
+.border-slate-100,
+.border-slate-200,
+.border-slate-200\/80,
+.border-slate-200\/90,
+.border-slate-300,
+.border-zinc-200 {
+  border-color: var(--line) !important;
+}
+.focus\:border-indigo-600:focus,
+.focus\:border-indigo-500:focus,
+.focus\:border-zinc-900:focus {
+  border-color: var(--green) !important;
+}
+.focus\:ring-indigo-500\/20:focus {
+  --tw-ring-color: color-mix(in srgb, var(--green) 20%, transparent) !important;
+}
+.hover\:text-slate-900:hover,
+.hover\:text-zinc-900:hover,
+.hover\:text-zinc-800:hover {
+  color: var(--green-bright) !important;
+}
+
+.bg-sky-500 {
+  background-color: #52d99a !important;
+}
+.text-sky-400 {
+  color: #82e8b4 !important;
+}
+.bg-amber-400,
+.bg-amber-500 {
+  background-color: #a8d96b !important;
+}
+.text-amber-300,
+.text-amber-400 {
+  color: #c4ed8d !important;
+}
+
+/* Regular text remains readable without making every label shout. */
+.font-black,
+.font-extrabold {
+  font-weight: 600 !important;
+}
+.font-bold {
+  font-weight: 500 !important;
+}
+.font-semibold {
+  font-weight: 400 !important;
 }
 
 /* Modern custom dark scrollbar */
@@ -20,19 +213,21 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #020617;
+  background: #000000;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.25);
+  background: rgba(135, 148, 138, 0.3);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.45);
+  background: rgba(53, 199, 121, 0.55);
 }
 
 /* Smooth input focus states */
-input:focus-visible, select:focus-visible, textarea:focus-visible {
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
   outline: none;
 }

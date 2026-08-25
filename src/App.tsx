@@ -81,31 +81,28 @@ function AppContent() {
     switch (currentView) {
       case "dashboard":
         return {
-          title: "Dashboard Overview",
-          subtitle: "Real-time database analytics and prospecting performance",
+          title: "Overview",
+          subtitle: "A clear view of your prospecting pipeline",
         };
       case "search":
         return {
-          title: "Prospect Businesses",
-          subtitle: "Live geographic query without mock or placeholder data",
+          title: "Find Prospects",
+          subtitle: "Search live business data and add the right leads",
         };
       case "leads":
         return {
-          title: "Saved Leads CRM",
-          subtitle:
-            "Manage, assign reps, filter, export, and track business prospects",
+          title: "Saved Leads",
+          subtitle: "Review, assign, and move prospects through your pipeline",
         };
       case "lead-details":
         return {
-          title: "Lead Dossier",
-          subtitle:
-            "Full database record attributes, rep assignment, and CRM notes",
+          title: "Lead Details",
+          subtitle: "Contact information, ownership, and follow-up history",
         };
       case "team":
         return {
-          title: "Team & Workload Allocation",
-          subtitle:
-            "Sales representatives roster, auto-assignment, and user credentials",
+          title: "Team",
+          subtitle: "Manage sales reps and balance lead ownership",
         };
       default:
         return { title: "ProspectPulse", subtitle: "" };
