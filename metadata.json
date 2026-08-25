@@ -1,0 +1,6 @@
+{
+  "name": "ProspectPulse - Live Lead Discovery & Team CRM",
+  "description": "Enterprise lead generation and prospecting platform with live business search, automated team lead assignment, workload sharing, Excel export, and CRM tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
