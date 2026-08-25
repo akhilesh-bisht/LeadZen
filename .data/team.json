@@ -1,0 +1,32 @@
+[
+  {
+    "id": "tm_dhananjay",
+    "name": "Dhananjay",
+    "role": "Senior Outreach Specialist",
+    "email": "dhananjay@company.sales",
+    "phone": "+1 (555) 234-8901",
+    "avatarColor": "#10b981",
+    "active": true,
+    "createdAt": "2026-08-25T15:56:35.653Z"
+  },
+  {
+    "id": "tm_harsh",
+    "name": "Harsh",
+    "role": "Account Executive",
+    "email": "harsh@company.sales",
+    "phone": "+1 (555) 876-5432",
+    "avatarColor": "#6366f1",
+    "active": true,
+    "createdAt": "2026-08-25T15:56:35.654Z"
+  },
+  {
+    "id": "tm_akhilesh",
+    "name": "Akhilesh",
+    "role": "Team Lead & Growth",
+    "email": "akhilesh@company.sales",
+    "phone": "+1 (555) 432-1098",
+    "avatarColor": "#f59e0b",
+    "active": true,
+    "createdAt": "2026-08-25T15:56:35.654Z"
+  }
+]

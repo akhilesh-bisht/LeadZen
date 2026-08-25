@@ -1,0 +1,45 @@
+[
+  {
+    "id": "usr_akhilesh_admin",
+    "name": "Akhilesh",
+    "email": "akhilesh@gmail.com",
+    "passwordHash": "35f66f8de9e54616cb2b928d431dfbc0d199e8f8b1a8d9d49eb39eaa4046598a246f77075b743bf7da3fbf32e80c03ac4faa4ae1669c3747784458a7ce253732",
+    "salt": "9db50ea4ab748cf0c4682ffb79488a1d",
+    "role": "admin",
+    "teamMemberId": "tm_akhilesh",
+    "avatarColor": "#f59e0b",
+    "phone": "+1 (555) 432-1098",
+    "active": true,
+    "createdAt": "2026-08-25T15:58:43.146Z",
+    "updatedAt": "2026-08-25T15:58:43.146Z",
+    "lastLogin": "2026-08-25T15:58:43.255Z"
+  },
+  {
+    "id": "usr_dhananjay",
+    "name": "Dhananjay",
+    "email": "dhananjay@company.sales",
+    "passwordHash": "86176f96f9813eb810d04f28e59b8ce35ae5d98b33fcf0e6a2f762086f9d2cb8896ea8cc4c6c480bb58219e8ad1ca62b66a560200f92a20f52c3565fa7d7b48d",
+    "salt": "6095b0fed85d88f61ffc1b9630727325",
+    "role": "sales_rep",
+    "teamMemberId": "tm_dhananjay",
+    "avatarColor": "#10b981",
+    "phone": "+1 (555) 234-8901",
+    "active": true,
+    "createdAt": "2026-08-25T15:58:43.146Z",
+    "updatedAt": "2026-08-25T15:58:43.146Z"
+  },
+  {
+    "id": "usr_harsh",
+    "name": "Harsh",
+    "email": "harsh@company.sales",
+    "passwordHash": "5444880832254cbd3f24e15301bc2dd4ba256ed21e2a8c3900758573b0b4834fc07eded75c65abb37b1791a1681be4743db5b8acfbb97c5087d638292a68ab4a",
+    "salt": "e78c57a1a3500bc9f32d0fe6d15e9c79",
+    "role": "sales_rep",
+    "teamMemberId": "tm_harsh",
+    "avatarColor": "#6366f1",
+    "phone": "+1 (555) 876-5432",
+    "active": true,
+    "createdAt": "2026-08-25T15:58:43.146Z",
+    "updatedAt": "2026-08-25T15:58:43.146Z"
+  }
+]
