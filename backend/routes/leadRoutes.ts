@@ -14,30 +14,30 @@
  * ============================================================================
  */
 
-import { Router } from 'express';
-import { LeadsController } from '../controllers/leadsController.js';
-import { optionalAuth } from '../middlewares/authMiddleware.js';
+import { Router } from "express";
+import { LeadsController } from "../controllers/leadsController.js";
+import { requireAuth, requireAdmin } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
 // Lead Listing & Searching
-router.get('/', LeadsController.getLeads);
+router.get("/", requireAuth, LeadsController.getLeads);
 
 // Lead Creation & Bulk Saving
-router.post('/', optionalAuth, LeadsController.createLeads);
+router.post("/", requireAdmin, LeadsController.createLeads);
 
 // Rep Assignment & Round-Robin Distribution
-router.post('/assign', LeadsController.assignLeads);
+router.post("/assign", requireAdmin, LeadsController.assignLeads);
 
 // Bulk Deletion
-router.delete('/', LeadsController.bulkDeleteLeads);
+router.delete("/", requireAdmin, LeadsController.bulkDeleteLeads);
 
 // Single Lead CRUD Operations
-router.get('/:id', LeadsController.getLeadById);
-router.patch('/:id', optionalAuth, LeadsController.updateLead);
-router.delete('/:id', LeadsController.deleteLead);
+router.get("/:id", requireAuth, LeadsController.getLeadById);
+router.patch("/:id", requireAuth, LeadsController.updateLead);
+router.delete("/:id", requireAdmin, LeadsController.deleteLead);
 
 // Lead Enrichment
-router.post('/:id/enrich', LeadsController.enrichLead);
+router.post("/:id/enrich", requireAdmin, LeadsController.enrichLead);
 
 export default router;

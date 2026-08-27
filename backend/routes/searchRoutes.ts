@@ -7,11 +7,12 @@
  * ============================================================================
  */
 
-import { Router } from 'express';
-import { SearchController } from '../controllers/searchController.js';
+import { Router } from "express";
+import { SearchController } from "../controllers/searchController.js";
+import { requireAdmin } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
-router.post('/', SearchController.searchBusinesses);
+router.post("/", requireAdmin, SearchController.searchBusinesses);
 
 export default router;
