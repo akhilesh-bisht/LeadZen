@@ -116,24 +116,20 @@ export const SearchForm: React.FC<SearchFormProps> = ({
           </label>
           <div className="relative">
             <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
+            <select
               id="search-location-input"
-              type="text"
               required
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="e.g. New York, London, Toronto, Noida"
-              className="w-full pl-10 pr-8 py-2.5 bg-slate-950/80 border border-slate-700/80 focus:bg-slate-950 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl text-xs sm:text-sm font-medium text-slate-100 placeholder:text-slate-500 transition-all outline-none"
-            />
-            {location && (
-              <button
-                type="button"
-                onClick={() => setLocation("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-200 rounded-md"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
+              className="w-full pl-10 pr-8 py-2.5 bg-slate-950/80 border border-slate-700/80 focus:bg-slate-950 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl text-xs sm:text-sm font-medium text-slate-100 transition-all outline-none cursor-pointer"
+            >
+              <option value="">Select a location</option>
+              {LOCATION_PRESETS.map((city) => (
+                <option key={city} value={city}>
+                  {city}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 

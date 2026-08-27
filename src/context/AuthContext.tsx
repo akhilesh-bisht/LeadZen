@@ -1,13 +1,17 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { IUser, UserRole } from '../types/index.js';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { DashboardPermission, IUser, UserRole } from "../types/index.js";
 
 interface AuthContextType {
   currentUser: IUser | null;
   token: string | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  canAccess: (permission: DashboardPermission) => boolean;
   isLoading: boolean;
-  login: (email: string, pass: string) => Promise<{ success: boolean; message?: string }>;
+  login: (
+    email: string,
+    pass: string,
+  ) => Promise<{ success: boolean; message?: string }>;
   registerUser: (data: {
     name: string;
     email: string;
@@ -15,6 +19,7 @@ interface AuthContextType {
     role?: UserRole;
     phone?: string;
     teamMemberId?: string;
+    permissions?: DashboardPermission[];
   }) => Promise<{ success: boolean; message?: string; user?: IUser }>;
   logout: () => void;
   openAuthModal: () => void;
@@ -25,10 +30,12 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const TOKEN_KEY = 'prospectpulse_auth_token';
-const USER_KEY = 'prospectpulse_auth_user';
+const TOKEN_KEY = "prospectpulse_auth_token";
+const USER_KEY = "prospectpulse_auth_user";
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [currentUser, setCurrentUser] = useState<IUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,7 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setCurrentUser(parsedUser);
 
           // Verify with backend
-          const res = await fetch('/api/auth/me', {
+          const res = await fetch("/api/auth/me", {
             headers: { Authorization: `Bearer ${storedToken}` },
           });
 
@@ -68,10 +75,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         // Auto-login as default Admin (Akhilesh) for seamless first-time experience
         try {
-          const res = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: 'akhilesh@gmail.com', password: 'akhilesh' }),
+          const res = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: "akhilesh@gmail.com",
+              password: "akhilesh",
+            }),
           });
           if (res.ok) {
             const data = await res.json();
@@ -92,17 +102,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, []);
 
-  const login = async (email: string, pass: string): Promise<{ success: boolean; message?: string }> => {
+  const login = async (
+    email: string,
+    pass: string,
+  ): Promise<{ success: boolean; message?: string }> => {
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), password: pass }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        return { success: false, message: data.error || 'Login failed' };
+        return { success: false, message: data.error || "Login failed" };
       }
 
       setToken(data.token);
@@ -113,7 +126,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return { success: true, message: data.message };
     } catch (err) {
-      return { success: false, message: (err as Error).message || 'Network error during login' };
+      return {
+        success: false,
+        message: (err as Error).message || "Network error during login",
+      };
     }
   };
 
@@ -126,10 +142,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     teamMemberId?: string;
   }): Promise<{ success: boolean; message?: string; user?: IUser }> => {
     try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(data),
@@ -137,12 +153,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const resData = await res.json();
       if (!res.ok) {
-        return { success: false, message: resData.error || 'Failed to create user' };
+        return {
+          success: false,
+          message: resData.error || "Failed to create user",
+        };
       }
 
       return { success: true, message: resData.message, user: resData.user };
     } catch (err) {
-      return { success: false, message: (err as Error).message || 'Network error' };
+      return {
+        success: false,
+        message: (err as Error).message || "Network error",
+      };
     }
   };
 
@@ -155,7 +177,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshUsersList = async (): Promise<IUser[]> => {
     try {
-      const res = await fetch('/api/auth/users', {
+      const res = await fetch("/api/auth/users", {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) return [];
@@ -166,7 +188,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const isAdmin = currentUser?.role === 'admin';
+  const isAdmin = currentUser?.role === "admin";
+  const canAccess = (permission: DashboardPermission) =>
+    isAdmin || (currentUser?.role === "sales_rep" && permission === "leads");
   const isAuthenticated = Boolean(currentUser && token);
 
   return (
@@ -176,6 +200,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         token,
         isAuthenticated,
         isAdmin,
+        canAccess,
         isLoading,
         login,
         registerUser,
@@ -194,7 +219,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };

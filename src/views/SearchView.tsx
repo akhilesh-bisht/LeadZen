@@ -18,6 +18,7 @@ import { LoadingState } from "../components/LoadingState.js";
 import { EmptyState } from "../components/EmptyState.js";
 import { ErrorState } from "../components/ErrorState.js";
 import { useToast } from "../components/Toast.js";
+import { useAuth } from "../context/AuthContext.js";
 
 interface SearchViewProps {
   onNavigateToLeads: () => void;
@@ -40,6 +41,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
   const [selectedIndexes, setSelectedIndexes] = useState<number[]>([]);
   const [isSavingBatch, setIsSavingBatch] = useState(false);
   const { showToast } = useToast();
+  const { token } = useAuth();
 
   const handleSearch = async (params: {
     query: string;
@@ -55,7 +57,10 @@ export const SearchView: React.FC<SearchViewProps> = ({
     try {
       const response = await fetch("/api/search", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(params),
       });
 
@@ -93,7 +98,10 @@ export const SearchView: React.FC<SearchViewProps> = ({
     try {
       const res = await fetch("/api/leads", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(lead),
       });
 
@@ -148,7 +156,10 @@ export const SearchView: React.FC<SearchViewProps> = ({
     try {
       const res = await fetch("/api/leads", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ leads: leadsToSave }),
       });
 
