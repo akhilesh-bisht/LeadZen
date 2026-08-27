@@ -1,6 +1,13 @@
-export type LeadStatus = 'new' | 'contacted' | 'interested' | 'not_interested' | 'converted';
+export type LeadStatus =
+  | "new"
+  | "contacted"
+  | "interested"
+  | "not_interested"
+  | "converted";
 
-export type UserRole = 'admin' | 'sales_rep';
+export type UserRole = "admin" | "sales_rep";
+export type DashboardPermission = "overview" | "search" | "leads" | "team";
+export type LeadPriority = "normal" | "high";
 
 export interface IUser {
   _id?: string;
@@ -8,6 +15,7 @@ export interface IUser {
   name: string;
   email: string;
   role: UserRole;
+  permissions: DashboardPermission[];
   teamMemberId?: string;
   avatarColor?: string;
   phone?: string;
@@ -46,6 +54,7 @@ export interface ILead {
   phone?: string | null;
   email?: string | null;
   website?: string | null;
+  priority?: LeadPriority;
   instagram?: string | null;
   linkedin?: string | null;
   facebook?: string | null;
@@ -72,6 +81,7 @@ export interface LeadSearchResult {
   phone: string | null;
   email: string | null;
   website: string | null;
+  priority?: LeadPriority;
   instagram: string | null;
   linkedin: string | null;
   facebook: string | null;
@@ -113,7 +123,7 @@ export interface DashboardStats {
   categoriesCount: { category: string; count: number }[];
   citiesCount: { city: string; count: number }[];
   recentLeads: ILead[];
-  dbType: 'mongodb' | 'local_persistent';
+  dbType: "mongodb" | "local_persistent";
 }
 
 export interface LeadsQueryParams {
@@ -122,8 +132,14 @@ export interface LeadsQueryParams {
   city?: string;
   status?: string;
   assignedTo?: string;
-  sortBy?: 'createdAt' | 'businessName' | 'rating' | 'reviewCount' | 'status' | 'assignedTo';
-  sortOrder?: 'asc' | 'desc';
+  sortBy?:
+    | "createdAt"
+    | "businessName"
+    | "rating"
+    | "reviewCount"
+    | "status"
+    | "assignedTo";
+  sortOrder?: "asc" | "desc";
   page?: number;
   limit?: number;
 }
@@ -138,4 +154,3 @@ export interface LeadsResponse {
   availableCities: string[];
   availableAssignees: string[];
 }
-

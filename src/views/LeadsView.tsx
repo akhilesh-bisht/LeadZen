@@ -46,7 +46,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({
   onViewLeadDetails,
   initialAssignedFilter = "all",
 }) => {
-  const { currentUser, isAdmin } = useAuth();
+  const { currentUser, isAdmin, token } = useAuth();
 
   const [leadsData, setLeadsData] = useState<LeadsResponse>({
     leads: [],
@@ -116,7 +116,9 @@ export const LeadsView: React.FC<LeadsViewProps> = ({
       if (cityFilter !== "all") params.append("city", cityFilter);
       if (assignedFilter !== "all") params.append("assignedTo", assignedFilter);
 
-      const res = await fetch(`/api/leads?${params.toString()}`);
+      const res = await fetch(`/api/leads?${params.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       if (!res.ok) {
         throw new Error("Failed to retrieve leads from database");
       }
@@ -138,6 +140,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({
     assignedFilter,
     sortBy,
     sortOrder,
+    token,
   ]);
 
   useEffect(() => {
@@ -197,7 +200,10 @@ export const LeadsView: React.FC<LeadsViewProps> = ({
     try {
       const res = await fetch(`/api/leads/${id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ status: newStatus }),
       });
 
@@ -225,7 +231,10 @@ export const LeadsView: React.FC<LeadsViewProps> = ({
     try {
       const res = await fetch(`/api/leads/${leadId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ assignedTo: assignedTo || null }),
       });
 
@@ -261,7 +270,10 @@ export const LeadsView: React.FC<LeadsViewProps> = ({
     try {
       const res = await fetch("/api/leads/assign", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           leadIds: selectedIds,
           assignTo: targetRep,
@@ -303,7 +315,10 @@ export const LeadsView: React.FC<LeadsViewProps> = ({
     }
 
     try {
-      const res = await fetch(`/api/leads/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/leads/${id}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       if (!res.ok) {
         throw new Error("Failed to delete lead");
       }
@@ -330,7 +345,10 @@ export const LeadsView: React.FC<LeadsViewProps> = ({
     try {
       const res = await fetch("/api/leads", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ ids: selectedIds }),
       });
 
@@ -446,7 +464,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({
 
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Bulk Actions when selected */}
-          {selectedIds.length > 0 && (
+          {isAdmin && selectedIds.length > 0 && (
             <div className="flex items-center gap-2 relative">
               {/* Bulk Assign Menu Button */}
               <div className="relative">
@@ -525,25 +543,29 @@ export const LeadsView: React.FC<LeadsViewProps> = ({
             </div>
           )}
 
-          <ExportButton
-            selectedIds={selectedIds}
-            currentFilters={{
-              status: statusFilter,
-              category: categoryFilter,
-              city: cityFilter,
-              assignedTo: assignedFilter,
-            }}
-            totalCount={leadsData.total}
-          />
+          {isAdmin && (
+            <ExportButton
+              selectedIds={selectedIds}
+              currentFilters={{
+                status: statusFilter,
+                category: categoryFilter,
+                city: cityFilter,
+                assignedTo: assignedFilter,
+              }}
+              totalCount={leadsData.total}
+            />
+          )}
 
-          <button
-            id="leads-find-more-btn"
-            onClick={onNavigateToSearch}
-            className="inline-flex items-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-sm transition-colors cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Find More Leads</span>
-          </button>
+          {isAdmin && (
+            <button
+              id="leads-find-more-btn"
+              onClick={onNavigateToSearch}
+              className="inline-flex items-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-sm transition-colors cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Find More Leads</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -591,6 +613,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({
             onAssignChange={handleAssignChange}
             isUpdatingStatusId={isUpdatingStatusId}
             isUpdatingAssignId={isUpdatingAssignId}
+            canManageLeads={isAdmin}
           />
 
           <Pagination

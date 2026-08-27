@@ -20,7 +20,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentView,
   onNavigate,
 }) => {
-  const { currentUser, isAdmin, logout, openAuthModal } = useAuth();
+  const { currentUser, isAdmin, canAccess, logout, openAuthModal } = useAuth();
   const [unassignedCount, setUnassignedCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -43,6 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badge: "Live",
       badgeColor:
         "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30",
+      permission: "overview" as const,
     },
     {
       id: "search",
@@ -52,6 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badge: "Live",
       badgeColor:
         "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30",
+      permission: "search" as const,
     },
     {
       id: "leads",
@@ -59,6 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Users,
       view: "leads" as const,
       badge: null,
+      permission: "leads" as const,
     },
     {
       id: "team",
@@ -73,6 +76,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         unassignedCount && unassignedCount > 0
           ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
           : "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30",
+      permission: "team" as const,
     },
   ];
 
@@ -106,54 +110,56 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="px-3 pt-2 pb-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
             Menu
           </div>
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive =
-              currentView === item.view ||
-              (item.view === "leads" && currentView === "lead-details");
+          {navItems
+            .filter((item) => canAccess(item.permission))
+            .map((item) => {
+              const Icon = item.icon;
+              const isActive =
+                currentView === item.view ||
+                (item.view === "leads" && currentView === "lead-details");
 
-            return (
-              <button
-                key={item.id}
-                id={`sidebar-nav-${item.id}`}
-                onClick={() => onNavigate(item.view)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all group cursor-pointer ${
-                  isActive
-                    ? "bg-indigo-600/20 text-white shadow-xs border border-indigo-500/40"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/90"
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Icon
-                    className={`w-4 h-4 transition-colors ${
-                      isActive
-                        ? "text-indigo-400"
-                        : "text-slate-400 group-hover:text-slate-200"
-                    }`}
-                  />
-                  <span>{item.label}</span>
-                </div>
-                {item.badge ? (
-                  <span
-                    className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                      item.badgeColor ||
-                      (isActive
-                        ? "bg-indigo-500/30 text-indigo-200"
-                        : "bg-slate-800 text-slate-400")
-                    }`}
-                  >
-                    {item.badge}
-                  </span>
-                ) : (
-                  <ChevronRight
-                    className={`w-3.5 h-3.5 opacity-30 group-hover:opacity-70 transition-opacity ${
-                      isActive ? "opacity-90 text-indigo-300" : ""
-                    }`}
-                  />
-                )}
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={item.id}
+                  id={`sidebar-nav-${item.id}`}
+                  onClick={() => onNavigate(item.view)}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all group cursor-pointer ${
+                    isActive
+                      ? "bg-indigo-600/20 text-white shadow-xs border border-indigo-500/40"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/90"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Icon
+                      className={`w-4 h-4 transition-colors ${
+                        isActive
+                          ? "text-indigo-400"
+                          : "text-slate-400 group-hover:text-slate-200"
+                      }`}
+                    />
+                    <span>{item.label}</span>
+                  </div>
+                  {item.badge ? (
+                    <span
+                      className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                        item.badgeColor ||
+                        (isActive
+                          ? "bg-indigo-500/30 text-indigo-200"
+                          : "bg-slate-800 text-slate-400")
+                      }`}
+                    >
+                      {item.badge}
+                    </span>
+                  ) : (
+                    <ChevronRight
+                      className={`w-3.5 h-3.5 opacity-30 group-hover:opacity-70 transition-opacity ${
+                        isActive ? "opacity-90 text-indigo-300" : ""
+                      }`}
+                    />
+                  )}
+                </button>
+              );
+            })}
         </nav>
       </div>
 

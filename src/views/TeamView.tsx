@@ -30,6 +30,7 @@ import {
   TeamWorkloadStats,
   DashboardStats,
   IUser,
+  DashboardPermission,
   UserRole,
 } from "../types/index.js";
 import { LoadingState } from "../components/LoadingState.js";
@@ -46,11 +47,14 @@ export const TeamView: React.FC<TeamViewProps> = ({
   onNavigateToLeadsWithFilter,
   onNavigateToSearch,
 }) => {
-  const { currentUser, isAdmin, registerUser } = useAuth();
+  const { currentUser, isAdmin, registerUser, token } = useAuth();
 
   const [activeTab, setActiveTab] = useState<"roster" | "accounts">("roster");
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [userAccounts, setUserAccounts] = useState<IUser[]>([]);
+  const [permissionDrafts, setPermissionDrafts] = useState<
+    Record<string, DashboardPermission[]>
+  >({});
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +94,9 @@ export const TeamView: React.FC<TeamViewProps> = ({
       const [teamRes, statsRes, usersRes] = await Promise.all([
         fetch("/api/team"),
         fetch("/api/dashboard/stats"),
-        fetch("/api/auth/users"),
+        fetch("/api/auth/users", {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }),
       ]);
 
       if (!teamRes.ok || !statsRes.ok) {
@@ -104,6 +110,14 @@ export const TeamView: React.FC<TeamViewProps> = ({
       setMembers(teamData.members || []);
       setStats(statsData);
       setUserAccounts(usersData.users || []);
+      setPermissionDrafts(
+        Object.fromEntries(
+          (usersData.users || []).map((user: IUser) => [
+            user.id,
+            user.permissions || [],
+          ]),
+        ),
+      );
     } catch (err) {
       console.error("Load team error:", err);
       setError((err as Error).message);
@@ -112,9 +126,35 @@ export const TeamView: React.FC<TeamViewProps> = ({
     }
   };
 
+  const updateUserPermissions = async (user: IUser) => {
+    const permissions = permissionDrafts[user.id] || [];
+    try {
+      const res = await fetch(`/api/auth/users/${user.id}/permissions`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ permissions }),
+      });
+      if (!res.ok) throw new Error("Failed to update permissions");
+      showToast(`Dashboard access updated for ${user.name}`, "success");
+      loadAllData();
+    } catch (err) {
+      showToast((err as Error).message, "error");
+    }
+  };
+
+  const togglePermission = (user: IUser, permission: DashboardPermission) => {
+    const current = permissionDrafts[user.id] || [];
+    setPermissionDrafts((drafts) => ({
+      ...drafts,
+      [user.id]: current.includes(permission)
+        ? current.filter((item) => item !== permission)
+        : [...current, permission],
+    }));
+  };
+
   useEffect(() => {
     loadAllData();
-  }, []);
+  }, [token]);
 
   // Handle Quick Auto-Assign Unassigned Leads
   const handleAutoAssign = async () => {
@@ -129,6 +169,7 @@ export const TeamView: React.FC<TeamViewProps> = ({
         leadCountToAssign === "all" ? 100 : Number(leadCountToAssign);
       const leadsRes = await fetch(
         `/api/leads?assignedTo=unassigned&limit=${limit}`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} },
       );
       if (!leadsRes.ok) throw new Error("Failed to retrieve unassigned leads");
 
@@ -142,7 +183,10 @@ export const TeamView: React.FC<TeamViewProps> = ({
 
       const assignRes = await fetch("/api/leads/assign", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           leadIds,
           assignTo: selectedTargetRep,
@@ -739,6 +783,7 @@ export const TeamView: React.FC<TeamViewProps> = ({
                     <th className="py-3 px-4">Role</th>
                     <th className="py-3 px-4">Phone</th>
                     <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4">Dashboard Access</th>
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -762,6 +807,47 @@ export const TeamView: React.FC<TeamViewProps> = ({
                             {user.name}
                           </span>
                         </div>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        {user.role === "admin" ? (
+                          <span className="text-[10px] font-bold text-amber-700">
+                            All areas
+                          </span>
+                        ) : (
+                          <div className="flex flex-wrap gap-x-3 gap-y-1.5 max-w-xs">
+                            {(
+                              [
+                                ["overview", "Overview"],
+                                ["search", "Search"],
+                                ["leads", "Leads"],
+                                ["team", "Team"],
+                              ] as Array<[DashboardPermission, string]>
+                            ).map(([permission, label]) => (
+                              <label
+                                key={permission}
+                                className="flex items-center gap-1 text-[10px] text-slate-600"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={(
+                                    permissionDrafts[user.id] || []
+                                  ).includes(permission)}
+                                  onChange={() =>
+                                    togglePermission(user, permission)
+                                  }
+                                  className="accent-indigo-600"
+                                />
+                                {label}
+                              </label>
+                            ))}
+                            <button
+                              onClick={() => updateUserPermissions(user)}
+                              className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800"
+                            >
+                              Save
+                            </button>
+                          </div>
+                        )}
                       </td>
                       <td className="py-3.5 px-4 font-mono text-slate-600">
                         {user.email}
