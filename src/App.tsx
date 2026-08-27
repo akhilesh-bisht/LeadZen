@@ -9,10 +9,12 @@ import { SearchView } from "./views/SearchView.js";
 import { LeadsView } from "./views/LeadsView.js";
 import { LeadDetailsView } from "./views/LeadDetailsView.js";
 import { TeamView } from "./views/TeamView.js";
+import { useAuth } from "./context/AuthContext.js";
 
 type ViewMode = "dashboard" | "search" | "leads" | "lead-details" | "team";
 
 function AppContent() {
+  const { currentUser, canAccess } = useAuth();
   const [currentView, setCurrentView] = useState<ViewMode>("dashboard");
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [activeRepFilter, setActiveRepFilter] = useState<string>("all");
@@ -23,6 +25,11 @@ function AppContent() {
     const handleHashChange = () => {
       const hash = window.location.hash.replace(/^#/, "");
       if (hash.startsWith("/leads/")) {
+        if (!canAccess("leads")) {
+          setCurrentView("dashboard");
+          window.location.hash = "/";
+          return;
+        }
         const id = hash.replace("/leads/", "");
         if (id) {
           setSelectedLeadId(id);
@@ -31,12 +38,27 @@ function AppContent() {
         }
       }
       if (hash === "/search") {
+        if (!canAccess("search")) {
+          setCurrentView("dashboard");
+          window.location.hash = "/";
+          return;
+        }
         setCurrentView("search");
         setSelectedLeadId(null);
       } else if (hash === "/leads") {
+        if (!canAccess("leads")) {
+          setCurrentView("dashboard");
+          window.location.hash = "/";
+          return;
+        }
         setCurrentView("leads");
         setSelectedLeadId(null);
       } else if (hash === "/team") {
+        if (!canAccess("team")) {
+          setCurrentView("dashboard");
+          window.location.hash = "/";
+          return;
+        }
         setCurrentView("team");
         setSelectedLeadId(null);
       } else {
@@ -48,7 +70,16 @@ function AppContent() {
     handleHashChange();
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
-  }, []);
+  }, [canAccess]);
+
+  useEffect(() => {
+    if (
+      currentUser &&
+      !canAccess(currentView === "lead-details" ? "leads" : currentView)
+    ) {
+      navigateTo("dashboard");
+    }
+  }, [currentUser, currentView, canAccess]);
 
   const navigateTo = (view: "dashboard" | "search" | "leads" | "team") => {
     setSelectedLeadId(null);

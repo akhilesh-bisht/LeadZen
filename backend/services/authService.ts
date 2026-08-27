@@ -18,7 +18,15 @@ import fs from "fs";
 import path from "path";
 import mongoose from "mongoose";
 import { User, IUserDocument } from "../models/User.js";
-import { IUser, UserRole } from "../../src/types/index.js";
+import { DashboardPermission, IUser, UserRole } from "../../src/types/index.js";
+
+export const DASHBOARD_PERMISSIONS: DashboardPermission[] = [
+  "overview",
+  "search",
+  "leads",
+  "team",
+];
+const DEFAULT_MEMBER_PERMISSIONS: DashboardPermission[] = ["overview", "leads"];
 
 interface StoredUser {
   id: string;
@@ -27,6 +35,7 @@ interface StoredUser {
   passwordHash: string;
   salt: string;
   role: UserRole;
+  permissions?: DashboardPermission[];
   teamMemberId?: string | null;
   avatarColor?: string;
   phone?: string | null;
@@ -187,6 +196,14 @@ export function sanitizeUser(u: StoredUser | IUserDocument | any): IUser {
     name: u.name,
     email: u.email,
     role: u.role || "sales_rep",
+    permissions:
+      u.role === "admin"
+        ? [...DASHBOARD_PERMISSIONS]
+        : Array.isArray(u.permissions)
+          ? u.permissions.filter((permission: string) =>
+              DASHBOARD_PERMISSIONS.includes(permission as DashboardPermission),
+            )
+          : [...DEFAULT_MEMBER_PERMISSIONS],
     teamMemberId: u.teamMemberId || null,
     avatarColor: u.avatarColor || "#6366f1",
     phone: u.phone || null,
@@ -223,9 +240,7 @@ export function generateAuthToken(user: IUser): string {
 /**
  * Verifies and decodes a signed authentication token
  */
-export function verifyAuthToken(
-  token: string,
-): {
+export function verifyAuthToken(token: string): {
   sub: string;
   email: string;
   name: string;
@@ -315,6 +330,7 @@ export async function createUser(data: {
   phone?: string;
   teamMemberId?: string;
   avatarColor?: string;
+  permissions?: DashboardPermission[];
 }): Promise<IUser> {
   const cleanEmail = data.email.trim().toLowerCase();
   const salt = generateSalt();
@@ -353,6 +369,7 @@ export async function createUser(data: {
         passwordHash,
         salt,
         role: data.role || "sales_rep",
+        permissions: data.permissions || DEFAULT_MEMBER_PERMISSIONS,
         phone: data.phone?.trim() || null,
         teamMemberId: data.teamMemberId || null,
         avatarColor,
@@ -376,6 +393,7 @@ export async function createUser(data: {
     passwordHash,
     salt,
     role: data.role || "sales_rep",
+    permissions: data.permissions || [...DEFAULT_MEMBER_PERMISSIONS],
     teamMemberId: data.teamMemberId || null,
     avatarColor,
     phone: data.phone?.trim() || null,
@@ -388,6 +406,36 @@ export async function createUser(data: {
   writeUsersFile(existingUsers);
 
   return sanitizeUser(newStoredUser);
+}
+
+export async function updateUserPermissions(
+  id: string,
+  permissions: DashboardPermission[],
+): Promise<IUser | null> {
+  const cleanPermissions = [...new Set(permissions)].filter((permission) =>
+    DASHBOARD_PERMISSIONS.includes(permission),
+  );
+
+  if (mongoose.connection.readyState === 1) {
+    try {
+      const doc = await User.findByIdAndUpdate(
+        id,
+        { permissions: cleanPermissions },
+        { new: true },
+      );
+      if (doc) return sanitizeUser(doc);
+    } catch (err) {
+      console.warn("MongoDB permission update fallback:", err);
+    }
+  }
+
+  const users = ensureUsersFile();
+  const user = users.find((item) => item.id === id);
+  if (!user) return null;
+  user.permissions = cleanPermissions;
+  user.updatedAt = new Date().toISOString();
+  writeUsersFile(users);
+  return sanitizeUser(user);
 }
 
 /**
