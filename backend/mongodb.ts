@@ -15,6 +15,18 @@ import {
 let isConnected = false;
 let dbMode: "mongodb" | "local_persistent" = "local_persistent";
 
+function requireMongoDatabase(): void {
+  if (
+    dbMode !== "mongodb" ||
+    !isConnected ||
+    mongoose.connection.readyState !== 1
+  ) {
+    throw new Error(
+      "MongoDB is unavailable. Lead data is not stored in JSON files.",
+    );
+  }
+}
+
 const DATA_DIR = path.join(process.cwd(), ".data");
 const DATA_FILE = path.join(DATA_DIR, "leads.json");
 const TEAM_FILE = path.join(DATA_DIR, "team.json");
@@ -206,8 +218,9 @@ export function deleteTeamMember(id: string): boolean {
 export async function connectToDatabase() {
   const uri = process.env.MONGODB_URI;
   if (!uri || uri.trim() === "") {
-    dbMode = "local_persistent";
-    return { isConnected: false, mode: "local_persistent" };
+    throw new Error(
+      "MONGODB_URI is required. Lead data is stored in MongoDB only.",
+    );
   }
 
   if (isConnected && mongoose.connection.readyState === 1) {
@@ -225,17 +238,9 @@ export async function connectToDatabase() {
     console.log("Successfully connected to MongoDB Atlas");
     return { isConnected: true, mode: "mongodb" };
   } catch (error) {
-    console.warn(
-      "MongoDB connection failed, falling back to local persistent store:",
-      (error as Error).message,
-    );
+    console.error("MongoDB connection failed:", (error as Error).message);
     isConnected = false;
-    dbMode = "local_persistent";
-    return {
-      isConnected: false,
-      mode: "local_persistent",
-      error: (error as Error).message,
-    };
+    throw new Error(`MongoDB connection failed: ${(error as Error).message}`);
   }
 }
 
@@ -337,6 +342,7 @@ export async function saveLeads(
   leadsToSave: Partial<ILead>[],
 ): Promise<{ saved: ILead[]; duplicatesCount: number }> {
   await connectToDatabase();
+  requireMongoDatabase();
   const savedResults: ILead[] = [];
   let duplicatesCount = 0;
 
@@ -363,6 +369,7 @@ export async function saveLeads(
       } else {
         const created = await Lead.create({
           ...leadData,
+          priority: leadData.priority || (leadData.website ? "normal" : "high"),
           status: leadData.status || "new",
         });
         savedResults.push(created.toObject() as unknown as ILead);
@@ -403,6 +410,7 @@ export async function saveLeads(
           phone: leadData.phone || null,
           email: leadData.email || null,
           website: leadData.website || null,
+          priority: leadData.priority || (leadData.website ? "normal" : "high"),
           instagram: leadData.instagram || null,
           linkedin: leadData.linkedin || null,
           facebook: leadData.facebook || null,
@@ -438,6 +446,7 @@ export async function assignLeads(
   assignments: { leadId: string; assignedTo: string | null }[];
 }> {
   await connectToDatabase();
+  requireMongoDatabase();
   const now = new Date().toISOString();
   const assignments: { leadId: string; assignedTo: string | null }[] = [];
 
@@ -530,6 +539,7 @@ export async function assignLeads(
 // Get paginated and filtered leads
 export async function getLeads(params: LeadsQueryParams) {
   await connectToDatabase();
+  requireMongoDatabase();
   const page = Math.max(1, Number(params.page) || 1);
   const limit = Math.max(1, Math.min(100, Number(params.limit) || 20));
   const skip = (page - 1) * limit;
@@ -711,6 +721,7 @@ export async function getLeads(params: LeadsQueryParams) {
 // Get single lead by ID
 export async function getLeadById(id: string): Promise<ILead | null> {
   await connectToDatabase();
+  requireMongoDatabase();
   if (dbMode === "mongodb" && isConnected) {
     const lead = await Lead.findById(id).lean().exec();
     return lead ? (lead as unknown as ILead) : null;
@@ -726,6 +737,7 @@ export async function updateLead(
   updates: Partial<ILead>,
 ): Promise<ILead | null> {
   await connectToDatabase();
+  requireMongoDatabase();
   const updateData = { ...updates };
   if (updates.assignedTo !== undefined) {
     if (updates.assignedTo && updates.assignedTo.trim() !== "") {
@@ -765,6 +777,7 @@ export async function updateLead(
 // Delete lead by ID
 export async function deleteLead(id: string): Promise<boolean> {
   await connectToDatabase();
+  requireMongoDatabase();
   if (dbMode === "mongodb" && isConnected) {
     const res = await Lead.findByIdAndDelete(id).exec();
     return Boolean(res);
@@ -780,6 +793,7 @@ export async function deleteLead(id: string): Promise<boolean> {
 // Delete multiple leads by IDs
 export async function deleteManyLeads(ids: string[]): Promise<number> {
   await connectToDatabase();
+  requireMongoDatabase();
   if (dbMode === "mongodb" && isConnected) {
     const res = await Lead.deleteMany({ _id: { $in: ids } }).exec();
     return res.deletedCount || 0;
@@ -966,6 +980,7 @@ export async function getLeadsForExport(filterOptions: {
   ids?: string[];
 }) {
   await connectToDatabase();
+  requireMongoDatabase();
 
   if (dbMode === "mongodb" && isConnected) {
     const query: Record<string, unknown> = {};

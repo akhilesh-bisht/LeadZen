@@ -12,7 +12,7 @@
     "active": true,
     "createdAt": "2026-08-25T15:58:43.146Z",
     "updatedAt": "2026-08-25T15:58:43.146Z",
-    "lastLogin": "2026-08-25T15:58:43.255Z"
+    "lastLogin": "2026-08-27T17:03:12.941Z"
   },
   {
     "id": "usr_dhananjay",
@@ -26,7 +26,8 @@
     "phone": "+1 (555) 234-8901",
     "active": true,
     "createdAt": "2026-08-25T15:58:43.146Z",
-    "updatedAt": "2026-08-25T15:58:43.146Z"
+    "updatedAt": "2026-08-25T15:58:43.146Z",
+    "lastLogin": "2026-08-27T17:10:11.992Z"
   },
   {
     "id": "usr_harsh",
@@ -40,6 +41,7 @@
     "phone": "+1 (555) 876-5432",
     "active": true,
     "createdAt": "2026-08-25T15:58:43.146Z",
-    "updatedAt": "2026-08-25T15:58:43.146Z"
+    "updatedAt": "2026-08-25T15:58:43.146Z",
+    "lastLogin": "2026-08-27T16:58:43.097Z"
   }
 ]
