@@ -9,7 +9,7 @@
  */
 
 import mongoose, { Schema, Document, Model } from "mongoose";
-import { LeadStatus } from "../../src/types/index.js";
+import { LeadPriority, LeadStatus } from "../../src/types/index.js";
 
 export interface ILeadDocument extends Document {
   businessName: string;
@@ -19,6 +19,7 @@ export interface ILeadDocument extends Document {
   phone?: string | null;
   email?: string | null;
   website?: string | null;
+  priority: LeadPriority;
   instagram?: string | null;
   linkedin?: string | null;
   facebook?: string | null;
@@ -51,6 +52,12 @@ const LeadSchema: Schema<ILeadDocument> = new Schema<ILeadDocument>(
     phone: { type: String, default: null, trim: true },
     email: { type: String, default: null, trim: true, lowercase: true },
     website: { type: String, default: null, trim: true },
+    priority: {
+      type: String,
+      enum: ["normal", "high"],
+      default: "normal",
+      index: true,
+    },
     instagram: { type: String, default: null, trim: true },
     linkedin: { type: String, default: null, trim: true },
     facebook: { type: String, default: null, trim: true },

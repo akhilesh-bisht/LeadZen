@@ -30,7 +30,7 @@ export class LeadsController {
    * GET /api/leads
    * Returns paginated, filtered, and sorted leads
    */
-  public static async getLeads(req: Request, res: Response) {
+  public static async getLeads(req: AuthenticatedRequest, res: Response) {
     try {
       const {
         search,
@@ -44,12 +44,16 @@ export class LeadsController {
         limit = "20",
       } = req.query;
 
+      const memberAssignedTo =
+        req.user?.role === "sales_rep" ? req.user.name : undefined;
+
       const result = await getLeads({
         search: search ? String(search) : undefined,
         category: category ? String(category) : undefined,
         city: city ? String(city) : undefined,
         status: status ? String(status) : undefined,
-        assignedTo: assignedTo ? String(assignedTo) : undefined,
+        assignedTo:
+          memberAssignedTo || (assignedTo ? String(assignedTo) : undefined),
         sortBy: sortBy as any,
         sortOrder: sortOrder as any,
         page: Number(page),
@@ -69,11 +73,19 @@ export class LeadsController {
    * GET /api/leads/:id
    * Returns a single lead document by its ID
    */
-  public static async getLeadById(req: Request, res: Response) {
+  public static async getLeadById(req: AuthenticatedRequest, res: Response) {
     try {
       const lead = await getLeadById(req.params.id);
       if (!lead) {
         return res.status(404).json({ error: "Lead not found in database." });
+      }
+      if (
+        req.user?.role === "sales_rep" &&
+        lead.assignedTo?.toLowerCase() !== req.user.name.toLowerCase()
+      ) {
+        return res
+          .status(404)
+          .json({ error: "Lead not found in your assignments." });
       }
       return res.json(lead);
     } catch (error) {
@@ -122,7 +134,34 @@ export class LeadsController {
    */
   public static async updateLead(req: AuthenticatedRequest, res: Response) {
     try {
-      const updated = await updateLead(req.params.id, req.body);
+      const existingLead = await getLeadById(req.params.id);
+      if (!existingLead) {
+        return res.status(404).json({ error: "Lead not found." });
+      }
+      if (
+        req.user?.role === "sales_rep" &&
+        existingLead.assignedTo?.toLowerCase() !== req.user.name.toLowerCase()
+      ) {
+        return res
+          .status(404)
+          .json({ error: "Lead not found in your assignments." });
+      }
+
+      const updates =
+        req.user?.role === "admin"
+          ? req.body
+          : Object.keys(req.body).length === 1 &&
+              typeof req.body.status === "string"
+            ? { status: req.body.status }
+            : null;
+
+      if (!updates) {
+        return res.status(403).json({
+          error: "Members may only update lead status.",
+        });
+      }
+
+      const updated = await updateLead(req.params.id, updates);
       if (!updated) {
         return res
           .status(404)

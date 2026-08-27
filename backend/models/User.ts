@@ -10,7 +10,7 @@
  */
 
 import mongoose, { Schema, Document, Model } from "mongoose";
-import { UserRole } from "../../src/types/index.js";
+import { DashboardPermission, UserRole } from "../../src/types/index.js";
 
 export interface IUserDocument extends Document {
   name: string;
@@ -18,6 +18,7 @@ export interface IUserDocument extends Document {
   passwordHash: string;
   salt: string;
   role: UserRole;
+  permissions: DashboardPermission[];
   teamMemberId?: string | null;
   avatarColor?: string;
   phone?: string | null;
@@ -56,6 +57,11 @@ const UserSchema: Schema<IUserDocument> = new Schema<IUserDocument>(
       default: "sales_rep",
       required: true,
       index: true,
+    },
+    permissions: {
+      type: [String],
+      enum: ["overview", "search", "leads", "team"],
+      default: ["overview", "leads"],
     },
     teamMemberId: {
       type: String,

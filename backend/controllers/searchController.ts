@@ -10,6 +10,7 @@
 
 import { Request, Response } from "express";
 import { executeBusinessSearch } from "../providers/business-provider.js";
+import { SocialProvider } from "../providers/social-provider.js";
 import { checkDuplicates } from "../mongodb.js";
 
 export class SearchController {
@@ -41,8 +42,26 @@ export class SearchController {
         provider,
       );
 
+      // Some providers omit phone numbers but still return the official website.
+      // Use that public page as a source for links the provider did not include.
+      const enrichedLeads = await Promise.all(
+        rawLeads.map(async (lead) => {
+          if (lead.phone || !lead.website) return lead;
+
+          const socialLinks = await SocialProvider.scrapeWebsiteSocialLinks(
+            lead.website,
+          );
+          return {
+            ...lead,
+            instagram: lead.instagram || socialLinks.instagram,
+            linkedin: lead.linkedin || socialLinks.linkedin,
+            facebook: lead.facebook || socialLinks.facebook,
+          };
+        }),
+      );
+
       // Check duplicates against MongoDB / persistent database
-      const leadsWithDupInfo = await checkDuplicates(rawLeads);
+      const leadsWithDupInfo = await checkDuplicates(enrichedLeads);
 
       return res.json({
         success: true,
