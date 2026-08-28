@@ -472,19 +472,25 @@ export const LeadDetailsView: React.FC<LeadDetailsViewProps> = ({
                 >
                   {lead.website.replace(/^https?:\/\//, "")}
                 </a>
-              ) : lead.googleMapsUrl ? (
+              ) : (
                 <a
-                  href={lead.googleMapsUrl}
+                  href={
+                    lead.googleMapsUrl &&
+                    lead.googleMapsUrl.includes("query=") &&
+                    !lead.googleMapsUrl.match(/query=-?\d+(\.\d+)?,/)
+                      ? lead.googleMapsUrl
+                      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                          [lead.businessName, lead.address, lead.city]
+                            .filter(Boolean)
+                            .join(", "),
+                        )}`
+                  }
                   target="_blank"
                   rel="noreferrer"
                   className="text-xs font-bold text-slate-700 hover:underline block truncate mt-0.5"
                 >
-                  View on Maps
+                  View on Google Maps
                 </a>
-              ) : (
-                <div className="text-xs text-slate-400 italic mt-0.5">
-                  Website unlisted
-                </div>
               )}
             </div>
             {lead.website ? (
@@ -501,9 +507,19 @@ export const LeadDetailsView: React.FC<LeadDetailsViewProps> = ({
               >
                 <Globe className="w-4 h-4" />
               </a>
-            ) : lead.googleMapsUrl ? (
+            ) : (
               <a
-                href={lead.googleMapsUrl}
+                href={
+                  lead.googleMapsUrl &&
+                  lead.googleMapsUrl.includes("query=") &&
+                  !lead.googleMapsUrl.match(/query=-?\d+(\.\d+)?,/)
+                    ? lead.googleMapsUrl
+                    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                        [lead.businessName, lead.address, lead.city]
+                          .filter(Boolean)
+                          .join(", "),
+                      )}`
+                }
                 target="_blank"
                 rel="noreferrer"
                 className="p-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition-colors shrink-0 shadow-xs cursor-pointer"
@@ -511,10 +527,6 @@ export const LeadDetailsView: React.FC<LeadDetailsViewProps> = ({
               >
                 <ExternalLink className="w-4 h-4" />
               </a>
-            ) : (
-              <div className="p-2 bg-slate-200 text-slate-400 rounded-xl shrink-0">
-                <Globe className="w-4 h-4" />
-              </div>
             )}
           </div>
         </div>

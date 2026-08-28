@@ -34,6 +34,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
   const [lastSearchParams, setLastSearchParams] = useState<{
     query: string;
     location: string;
+    radiusKm?: number;
     limit: number;
     provider: string;
   } | null>(null);
@@ -46,6 +47,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
   const handleSearch = async (params: {
     query: string;
     location: string;
+    radiusKm?: number;
     limit: number;
     provider: string;
   }) => {
@@ -233,6 +235,11 @@ export const SearchView: React.FC<SearchViewProps> = ({
               <p className="text-xs text-slate-400 mt-1">
                 Showing live business listings for "{lastSearchParams?.query}"
                 in "{lastSearchParams?.location}"
+                {lastSearchParams?.radiusKm && (
+                  <span className="text-indigo-400 font-medium ml-1">
+                    • {lastSearchParams.radiusKm} km radius
+                  </span>
+                )}
               </p>
             </div>
 
