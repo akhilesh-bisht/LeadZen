@@ -20,7 +20,22 @@ export class SearchController {
    */
   public static async searchBusinesses(req: Request, res: Response) {
     try {
-      const { query, location, limit = 25, provider } = req.body;
+      const {
+        query,
+        location,
+        locations,
+        radiusKm = 25,
+        limit = 25,
+        provider,
+      } = req.body;
+      const selectedLocations = Array.isArray(locations)
+        ? locations.filter(
+            (item: unknown): item is string =>
+              typeof item === "string" && item.trim(),
+          )
+        : location
+          ? [location]
+          : [];
 
       if (!query || typeof query !== "string" || !query.trim()) {
         return res
@@ -28,19 +43,31 @@ export class SearchController {
           .json({ error: "Business or category query is required." });
       }
 
-      if (!location || typeof location !== "string" || !location.trim()) {
+      if (selectedLocations.length === 0) {
         return res.status(400).json({ error: "City or location is required." });
       }
 
       const cleanLimit = Math.min(100, Math.max(1, Number(limit) || 25));
+      const cleanRadius = Math.min(50, Math.max(1, Number(radiusKm) || 25));
 
       // Fetch real data from live business provider
-      const { leads: rawLeads, providerUsed } = await executeBusinessSearch(
-        query.trim(),
-        location.trim(),
-        cleanLimit,
-        provider,
+      const results = await Promise.all(
+        selectedLocations.map((selectedLocation) =>
+          executeBusinessSearch(
+            query.trim(),
+            selectedLocation.trim(),
+            cleanLimit,
+            provider,
+            cleanRadius,
+          ),
+        ),
       );
+      const rawLeads = results
+        .flatMap((result) => result.leads)
+        .slice(0, cleanLimit);
+      const providerUsed = [
+        ...new Set(results.map((result) => result.providerUsed)),
+      ].join(" + ");
 
       // Some providers omit phone numbers but still return the official website.
       // Use that public page as a source for links the provider did not include.
@@ -66,7 +93,9 @@ export class SearchController {
       return res.json({
         success: true,
         query: query.trim(),
-        location: location.trim(),
+        location: selectedLocations.join(", "),
+        locations: selectedLocations,
+        radiusKm: cleanRadius,
         providerUsed,
         count: leadsWithDupInfo.length,
         leads: leadsWithDupInfo,
