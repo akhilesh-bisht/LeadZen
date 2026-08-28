@@ -181,17 +181,27 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onSave, isSaving }) =>
               </a>
             )}
 
-            {lead.googleMapsUrl && (
-              <a
-                href={lead.googleMapsUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-slate-400 hover:text-indigo-300 ml-auto font-medium inline-flex items-center gap-1"
-              >
-                <span>Google Maps</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
+            {/* Google Maps Link with Full Business Card Search */}
+            <a
+              href={
+                lead.googleMapsUrl &&
+                lead.googleMapsUrl.includes("query=") &&
+                !lead.googleMapsUrl.match(/query=-?\d+(\.\d+)?,/)
+                  ? lead.googleMapsUrl
+                  : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                      [lead.businessName, lead.address, lead.city]
+                        .filter(Boolean)
+                        .join(", "),
+                    )}`
+              }
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs text-slate-400 hover:text-indigo-300 ml-auto font-medium inline-flex items-center gap-1"
+              title="Open full business place details on Google Maps"
+            >
+              <span>Google Maps</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
         </div>
       </div>

@@ -6,6 +6,7 @@ interface FilterParams {
   status?: string;
   category?: string;
   city?: string;
+  assignedTo?: string;
 }
 
 interface ExportButtonProps {
@@ -53,6 +54,9 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
         }
         if (currentFilters.city && currentFilters.city !== 'all') {
           params.append('city', currentFilters.city);
+        }
+        if (currentFilters.assignedTo && currentFilters.assignedTo !== 'all') {
+          params.append('assignedTo', currentFilters.assignedTo);
         }
       }
 
