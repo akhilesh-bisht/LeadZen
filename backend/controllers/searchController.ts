@@ -31,17 +31,16 @@ export class SearchController {
       const selectedLocations = Array.isArray(locations)
         ? locations.filter(
             (item: unknown): item is string =>
-              typeof item === "string" && item.trim(),
+              typeof item === "string" && item.trim().length > 0,
           )
-        : location
-          ? [location]
+        : typeof location === "string" && location.trim()
+          ? [location.trim()]
           : [];
 
-      if (!query || typeof query !== "string" || !query.trim()) {
-        return res
-          .status(400)
-          .json({ error: "Business or category query is required." });
-      }
+      const cleanQuery =
+        query && typeof query === "string" && query.trim()
+          ? query.trim()
+          : "All Businesses";
 
       if (selectedLocations.length === 0) {
         return res.status(400).json({ error: "City or location is required." });
@@ -54,7 +53,7 @@ export class SearchController {
       const results = await Promise.all(
         selectedLocations.map((selectedLocation) =>
           executeBusinessSearch(
-            query.trim(),
+            cleanQuery,
             selectedLocation.trim(),
             cleanLimit,
             provider,

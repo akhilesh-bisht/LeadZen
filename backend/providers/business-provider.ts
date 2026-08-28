@@ -59,30 +59,46 @@ export class OpenStreetMapProvider implements BusinessProvider {
     const cleanLocation = location.trim();
     const cleanQuery = query.trim();
 
-    // 1. Geocode location with Nominatim
-    const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-      cleanLocation,
-    )}&addressdetails=1&limit=1`;
+    let centerLatitude: number;
+    let centerLongitude: number;
+    let detectedLocationName = cleanLocation;
 
-    const geoRes = await fetch(nominatimUrl, {
-      headers: {
-        "User-Agent":
-          "LeadGenPro-RealProspecting/1.0 (contact: support@leadgenapp.internal)",
-      },
-    });
+    // Check if location is already coordinates (e.g. from GPS Geolocation "28.6139, 77.2090")
+    const coordMatch = cleanLocation.match(
+      /^\s*(-?\d+(\.\d+)?)\s*,\s*(-?\d+(\.\d+)?)\s*$/,
+    );
 
-    if (!geoRes.ok) {
-      throw new Error(`Location lookup failed: ${geoRes.statusText}`);
+    if (coordMatch) {
+      centerLatitude = parseFloat(coordMatch[1]);
+      centerLongitude = parseFloat(coordMatch[3]);
+    } else {
+      // 1. Geocode location with Nominatim
+      const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+        cleanLocation,
+      )}&addressdetails=1&limit=1`;
+
+      const geoRes = await fetch(nominatimUrl, {
+        headers: {
+          "User-Agent":
+            "LeadGenPro-RealProspecting/1.0 (contact: support@leadgenapp.internal)",
+        },
+      });
+
+      if (!geoRes.ok) {
+        throw new Error(`Location lookup failed: ${geoRes.statusText}`);
+      }
+
+      const geoData = await geoRes.json();
+      if (!Array.isArray(geoData) || geoData.length === 0) {
+        return []; // Real empty results for unknown location
+      }
+
+      const locInfo = geoData[0];
+      centerLatitude = parseFloat(locInfo.lat);
+      centerLongitude = parseFloat(locInfo.lon);
+      detectedLocationName = locInfo.name || cleanLocation;
     }
 
-    const geoData = await geoRes.json();
-    if (!Array.isArray(geoData) || geoData.length === 0) {
-      return []; // Real empty results for unknown location
-    }
-
-    const locInfo = geoData[0];
-    const centerLatitude = parseFloat(locInfo.lat);
-    const centerLongitude = parseFloat(locInfo.lon);
     const latitudeDelta = radiusKm / 111;
     const longitudeDelta =
       radiusKm /
@@ -91,9 +107,18 @@ export class OpenStreetMapProvider implements BusinessProvider {
     bbox = `(${centerLatitude - latitudeDelta},${centerLongitude - longitudeDelta},${centerLatitude + latitudeDelta},${centerLongitude + longitudeDelta})`;
 
     // 2. Determine tag query
-    const qLower = cleanQuery.toLowerCase();
-    let tagFilters = this.categoryTagMap[qLower];
-    if (!tagFilters) {
+    const qLower = cleanQuery.toLowerCase().trim();
+    const isAllBusinesses =
+      !cleanQuery ||
+      qLower === "all" ||
+      qLower === "all businesses" ||
+      qLower === "all business" ||
+      qLower === "business" ||
+      qLower === "commercial" ||
+      qLower === "any";
+
+    let tagFilters = isAllBusinesses ? null : this.categoryTagMap[qLower];
+    if (!isAllBusinesses && !tagFilters) {
       // Find matching keyword or use generic commercial query
       for (const [key, tags] of Object.entries(this.categoryTagMap)) {
         if (qLower.includes(key) || key.includes(qLower)) {
@@ -104,7 +129,26 @@ export class OpenStreetMapProvider implements BusinessProvider {
     }
 
     let overpassQuery = "";
-    if (tagFilters && tagFilters.length > 0) {
+    if (isAllBusinesses) {
+      // Query ALL commercial business categories across the bounding box
+      overpassQuery = `
+        [out:json][timeout:25];
+        (
+          node["shop"][name]${bbox};
+          node["amenity"][name]${bbox};
+          node["office"][name]${bbox};
+          node["craft"][name]${bbox};
+          node["healthcare"][name]${bbox};
+          node["tourism"][name]${bbox};
+          node["commercial"][name]${bbox};
+          way["shop"][name]${bbox};
+          way["amenity"][name]${bbox};
+          way["office"][name]${bbox};
+          way["healthcare"][name]${bbox};
+        );
+        out center ${limit};
+      `;
+    } else if (tagFilters && tagFilters.length > 0) {
       const nodeQueries = tagFilters
         .map((t) => `node[${t}][name]${bbox};`)
         .join("\n");
@@ -201,7 +245,7 @@ export class OpenStreetMapProvider implements BusinessProvider {
           ? addressParts.join(", ")
           : tags["addr:full"] || null;
 
-      const detectedCity = tags["addr:city"] || locInfo.name || cleanLocation;
+      const detectedCity = tags["addr:city"] || detectedLocationName || cleanLocation;
 
       // Extract real phone
       const phone =
@@ -228,7 +272,7 @@ export class OpenStreetMapProvider implements BusinessProvider {
       const linkedin = tags["contact:linkedin"] || tags["linkedin"] || null;
 
       // Extract real category
-      let category = cleanQuery;
+      let category = cleanQuery === "All Businesses" ? "Business" : cleanQuery;
       if (tags.amenity) {
         category =
           tags.amenity.charAt(0).toUpperCase() +
@@ -249,13 +293,13 @@ export class OpenStreetMapProvider implements BusinessProvider {
           " Office";
       }
 
-      // Real Google Maps search URL from coordinates / name
-      let googleMapsUrl: string | null = null;
-      if (lat && lon) {
-        googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
-      } else {
-        googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + " " + detectedCity)}`;
-      }
+      // Real Google Maps search URL pointing to full business Place Card
+      const placeQuery = [name, fullAddress, detectedCity]
+        .filter(Boolean)
+        .join(", ");
+      const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        placeQuery,
+      )}`;
 
       results.push({
         businessName: name,
@@ -299,20 +343,50 @@ export class TomTomSearchProvider implements BusinessProvider {
     query: string,
     location: string,
     limit: number,
-    _radiusKm?: number,
+    radiusKm: number = 25,
   ): Promise<LeadSearchResult[]> {
     if (!this.apiKey) {
       throw new Error("TomTom API key is missing.");
     }
 
+    const radiusMeters = Math.max(1000, Math.min(100000, (radiusKm || 25) * 1000));
     const searchParams = new URLSearchParams({
       key: this.apiKey,
       limit: String(limit),
+      radius: String(radiusMeters),
       language: "en-US",
     });
-    const searchUrl = `https://api.tomtom.com/search/2/poiSearch/${encodeURIComponent(
-      `${query} in ${location}`,
-    )}.json?${searchParams.toString()}`;
+
+    const coordMatch = location.match(
+      /^\s*(-?\d+(\.\d+)?)\s*,\s*(-?\d+(\.\d+)?)\s*$/,
+    );
+    let searchUrl: string;
+
+    const qLower = query.toLowerCase().trim();
+    const isAllBusinesses =
+      !query ||
+      qLower === "all" ||
+      qLower === "all businesses" ||
+      qLower === "all business" ||
+      qLower === "business" ||
+      qLower === "commercial" ||
+      qLower === "any";
+
+    const effectiveQuery = isAllBusinesses ? "business" : query;
+
+    if (coordMatch) {
+      const lat = coordMatch[1];
+      const lon = coordMatch[3];
+      searchParams.set("lat", lat);
+      searchParams.set("lon", lon);
+      searchUrl = `https://api.tomtom.com/search/2/poiSearch/${encodeURIComponent(
+        effectiveQuery,
+      )}.json?${searchParams.toString()}`;
+    } else {
+      searchUrl = `https://api.tomtom.com/search/2/poiSearch/${encodeURIComponent(
+        `${effectiveQuery} in ${location}`,
+      )}.json?${searchParams.toString()}`;
+    }
 
     const res = await fetch(searchUrl);
     if (!res.ok) {
@@ -331,15 +405,20 @@ export class TomTomSearchProvider implements BusinessProvider {
       const longitude = typeof position?.lon === "number" ? position.lon : null;
       const city =
         result.address?.municipality || result.address?.localName || location;
-      const googleMapsUrl =
-        latitude !== null && longitude !== null
-          ? `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
-          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name} ${city}`)}`;
+      const freeformAddress = result.address?.freeformAddress || "";
+      const placeQuery = [name, freeformAddress, city]
+        .filter(Boolean)
+        .join(", ");
+      const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        placeQuery,
+      )}`;
       const categories = result.poi?.categories;
       const category =
         Array.isArray(categories) && categories.length > 0
           ? categories[0].replace(/_/g, " ")
-          : query;
+          : isAllBusinesses
+            ? "Business"
+            : query;
 
       return [
         {
@@ -486,18 +565,27 @@ export async function executeBusinessSearch(
   const geminiKey = process.env.GEMINI_API_KEY;
   const tomtomKey = process.env.TOMTOM_API_KEY;
   const configuredType =
-    preferredProvider || process.env.BUSINESS_PROVIDER_TYPE || "auto";
+    preferredProvider || process.env.BUSINESS_PROVIDER_TYPE || "tomtom";
 
   // 1. If user prefers TomTom and the key exists
   if (configuredType === "tomtom" && tomtomKey) {
     const provider = new TomTomSearchProvider(tomtomKey);
-    const leads = await provider.searchBusinesses(
-      query,
-      location,
-      limit,
-      radiusKm,
-    );
-    return { leads, providerUsed: provider.name };
+    try {
+      const leads = await provider.searchBusinesses(
+        query,
+        location,
+        limit,
+        radiusKm,
+      );
+      if (leads.length > 0) {
+        return { leads, providerUsed: provider.name };
+      }
+    } catch (tomtomError) {
+      console.warn(
+        "TomTom search error, falling back to OSM:",
+        tomtomError,
+      );
+    }
   }
 
   // 2. In auto mode, prefer TomTom for local business results when configured.
@@ -533,10 +621,15 @@ export async function executeBusinessSearch(
     return { leads, providerUsed: provider.name };
   }
 
-  // 4. Default & Auto: Try OpenStreetMap Overpass (Real live global geographic database)
+  // 4. Default & Fallback: Try OpenStreetMap Overpass (Real live global geographic database)
   const osmProvider = new OpenStreetMapProvider();
   try {
-    const leads = await osmProvider.searchBusinesses(query, location, limit);
+    const leads = await osmProvider.searchBusinesses(
+      query,
+      location,
+      limit,
+      radiusKm,
+    );
     if (leads.length > 0) {
       return { leads, providerUsed: osmProvider.name };
     }
@@ -547,7 +640,12 @@ export async function executeBusinessSearch(
     );
   }
 
-  // Automatic mode must not silently switch to AI-generated records. Return
-  // only the factual directory result when OSM has no matching businesses.
-  return { leads: [], providerUsed: osmProvider.name };
+  // If no records found, return empty with provider info
+  return {
+    leads: [],
+    providerUsed:
+      configuredType === "tomtom"
+        ? "TomTom Search API"
+        : osmProvider.name,
+  };
 }

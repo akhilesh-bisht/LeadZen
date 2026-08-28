@@ -10,6 +10,7 @@ import { LeadsView } from "./views/LeadsView.js";
 import { LeadDetailsView } from "./views/LeadDetailsView.js";
 import { TeamView } from "./views/TeamView.js";
 import { useAuth } from "./context/AuthContext.js";
+import { DashboardPermission } from "./types/index.js";
 
 type ViewMode = "dashboard" | "search" | "leads" | "lead-details" | "team";
 
@@ -73,10 +74,14 @@ function AppContent() {
   }, [canAccess]);
 
   useEffect(() => {
-    if (
-      currentUser &&
-      !canAccess(currentView === "lead-details" ? "leads" : currentView)
-    ) {
+    const requiredPermission: DashboardPermission =
+      currentView === "dashboard"
+        ? "overview"
+        : currentView === "lead-details"
+          ? "leads"
+          : currentView;
+
+    if (currentUser && !canAccess(requiredPermission)) {
       navigateTo("dashboard");
     }
   }, [currentUser, currentView, canAccess]);
