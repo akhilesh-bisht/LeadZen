@@ -6,8 +6,7 @@ A full-stack, production-grade Lead Generation and CRM prospecting platform with
 
 ## Key Features
 
-1. **Zero Mock/Static Data Guarantee**:
-   - Strictly no fake records, demo datasets, or hardcoded mock placeholders.
+1. Data Guarantee**:
    - If an external provider returns zero leads, the UI renders the clear empty state: *"No businesses found. Try another search."*
    - If contact details (phone, email, Instagram, LinkedIn) are not available from the provider, they remain strictly `null` and are clearly marked as unavailable in the UI.
 
